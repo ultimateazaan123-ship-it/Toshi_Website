@@ -40,7 +40,9 @@ export default function Navbar() {
     <>
       <nav className={`navbar ${scrolled && !menuOpen ? 'scrolled' : ''}`}>
         <div className="navbar__logo">
-          <Link href="/">TO<span>SHI</span></Link>
+          <Link href="/" aria-label="Toshi — Startseite">
+            <img src="/images/Toshi_Logo.webp" alt="Toshi" className="navbar__logo-img" />
+          </Link>
         </div>
 
         <div className="navbar__right">

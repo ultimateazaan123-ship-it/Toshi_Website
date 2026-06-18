@@ -2,13 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useLang } from '../context/LangContext';
 import { showcaseSlides as slides } from '../data/showcaseSlides';
+import DetailSections from './DetailSections';
+
+const nextOf = (slide) => slides[(slides.findIndex((s) => s.id === slide.id) + 1) % slides.length];
 
 const menuItems = [
-  ['Sushi Menus', '10 Nigiri, maki sets, inside-out rolls', '/images/sushi-platter.jpg'],
-  ['Nigiri', 'Sake, maguro, ebi, unagi and tamago', 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=900&q=80'],
-  ['Maki', 'Clean classics with salmon, tuna, avocado and cucumber', 'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=900&q=80'],
-  ['Warm Kitchen', 'Noodles, curry, teriyaki salmon and crispy duck', 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=900&q=80'],
-  ['Bowls', 'Poke, buddha bowls and teriyaki rice bowls', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&q=80'],
+  ['Sushi Menüs', '10 Nigiri, Maki-Sets, Inside-Out-Rollen', '/images/sushi-platter.jpg'],
+  ['Nigiri', 'Sake, Maguro, Ebi, Unagi und Tamago', 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=900&q=80'],
+  ['Maki', 'Klare Klassiker mit Lachs, Thunfisch, Avocado und Gurke', 'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=900&q=80'],
+  ['Warme Küche', 'Nudeln, Curry, Teriyaki-Lachs und knusprige Ente', 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=900&q=80'],
+  ['Bowls', 'Poke, Buddha Bowls und Teriyaki-Reisbowls', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&q=80'],
 ];
 
 const slideVariants = {
@@ -247,16 +250,16 @@ export default function OkamiShowcase() {
         </div>
 
         <div className="okami-rail">
-          <button type="button" onClick={() => step(-1)} aria-label="Previous slide">Up</button>
+          <button type="button" onClick={() => step(-1)} aria-label="Vorherige Folie">Hoch</button>
           <div className="okami-progress">
             <span style={{ height: `${((active + 1) / slides.length) * 100}%` }} />
           </div>
-          <button type="button" onClick={() => step(1)} aria-label="Next slide">Down</button>
+          <button type="button" onClick={() => step(1)} aria-label="Nächste Folie">Runter</button>
         </div>
 
         <div className="okami-bottom-caption">
-          <button type="button" onClick={() => step(-1)} aria-label="Previous slide">Up</button>
-          <button type="button" onClick={() => step(1)} aria-label="Next slide">Down</button>
+          <button type="button" onClick={() => step(-1)} aria-label="Vorherige Folie">Hoch</button>
+          <button type="button" onClick={() => step(1)} aria-label="Nächste Folie">Runter</button>
           <AnimatePresence initial={false} mode="wait">
             <motion.span
               key={current.note}
@@ -274,7 +277,7 @@ export default function OkamiShowcase() {
 
         <div className="okami-social">
           <a href="https://www.instagram.com/toshi.dresden/" target="_blank" rel="noopener noreferrer">In</a>
-          <a href="https://www.lieferando.de/speisekarte/toshi-sushi-asia-kuche-freital" target="_blank" rel="noopener noreferrer">Order</a>
+          <a href="https://www.lieferando.de/speisekarte/toshi-sushi-asia-kuche-freital" target="_blank" rel="noopener noreferrer">Bestellen</a>
         </div>
       </div>
 
@@ -368,7 +371,7 @@ export default function OkamiShowcase() {
               aria-label="Close"
             />
 
-            <section className="slide-expand__hero">
+            <section className="slide-expand__hero" style={{ '--accent': expandedSlide.accent }}>
               <motion.div
                 className="slide-expand__image"
                 style={{ backgroundImage: `url(${expandedSlide.image})` }}
@@ -377,6 +380,10 @@ export default function OkamiShowcase() {
                 transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
               />
               <div className="slide-expand__shade" />
+              <div className="slide-expand__hero-top">
+                <span className="sx-hero-num">{expandedSlide.number}</span>
+                <span className="sx-hero-mood">{expandedSlide.mood}</span>
+              </div>
               <div className="slide-expand__center">
                 <motion.h2
                   initial={{ x: titleOffset.x, y: titleOffset.y }}
@@ -386,57 +393,35 @@ export default function OkamiShowcase() {
                   {expandedSlide.title}
                 </motion.h2>
               </div>
-              <div className="slide-expand__scroll-hint">
-                <span>Scroll Down</span>
-                <span>2026</span>
+              <div className="slide-expand__scroll-cue">
+                <span>Scrollen</span>
+                <span className="sx-scroll-line" />
               </div>
             </section>
 
-            <section className="detail-copy-section">
-              <div>
-                <p className="detail-kicker">{expandedSlide.mood}</p>
-                <h2>{expandedSlide.title}</h2>
-              </div>
-              <div className="detail-copy">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-                <p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante.</p>
-              </div>
-            </section>
+            <DetailSections slide={expandedSlide} />
 
-            <section className="detail-image-band">
-              <img src="/images/interior-ceiling.jpg" alt="Toshi interior" />
-            </section>
-
-            <section className="detail-copy-section detail-copy-section--reverse">
-              <div>
-                <p className="detail-kicker">Details</p>
-                <h2>Experience more</h2>
-              </div>
-              <div className="detail-copy">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt.</p>
-              </div>
-            </section>
-
-            <footer className="detail-footer">
-              <button type="button" className="slide-expand__back" onClick={() => setExpandedSlide(null)}>
-                ← Back
+            <footer className="sx-foot">
+              <button type="button" className="sx-foot__back" onClick={() => setExpandedSlide(null)}>
+                <span className="sx-foot__back-ico" aria-hidden="true">←</span>
+                Zurück zur Übersicht
               </button>
-              <div>
-                <span>Weiter zu:</span>
-                <button
-                  type="button"
-                  className="slide-expand__next"
-                  onClick={() => {
-                    if (expandRef.current) expandRef.current.scrollTop = 0;
-                    setTitleOffset({ x: 0, y: 0 });
-                    setExpandedSlide(slides[(slides.findIndex((s) => s.id === expandedSlide.id) + 1) % slides.length]);
-                  }}
-                >
-                  {slides[(slides.findIndex((s) => s.id === expandedSlide.id) + 1) % slides.length].title}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="sx-foot__next"
+                onClick={() => {
+                  if (expandRef.current) expandRef.current.scrollTop = 0;
+                  setTitleOffset({ x: 0, y: 0 });
+                  setExpandedSlide(nextOf(expandedSlide));
+                }}
+              >
+                <span className="sx-foot__next-label">Weiter — {nextOf(expandedSlide).number}</span>
+                <span className="sx-foot__next-title">{nextOf(expandedSlide).title}</span>
+                <span
+                  className="sx-foot__next-thumb"
+                  style={{ backgroundImage: `url(${nextOf(expandedSlide).image})` }}
+                />
+              </button>
             </footer>
           </motion.div>
         )}
