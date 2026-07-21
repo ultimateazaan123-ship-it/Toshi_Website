@@ -1,6 +1,5 @@
-import { notFound } from 'next/navigation';
-import ShowcaseDetailPage from '../../src/views/ShowcaseDetailPage';
-import { getShowcaseSlide, showcaseSlides } from '../../src/data/showcaseSlides';
+import { redirect } from 'next/navigation';
+import { showcaseSlides } from '../../src/data/showcaseSlides';
 
 export function generateStaticParams() {
   return showcaseSlides
@@ -8,12 +7,7 @@ export function generateStaticParams() {
     .map((slide) => ({ slug: slide.slug }));
 }
 
-export default async function Page({ params }) {
-  const { slug } = await params;
-
-  if (!getShowcaseSlide(slug) || slug === 'story') {
-    notFound();
-  }
-
-  return <ShowcaseDetailPage slug={slug} />;
+// Legacy showcase routes — the revamped site is a one-pager.
+export default function LegacySlugPage() {
+  redirect('/');
 }

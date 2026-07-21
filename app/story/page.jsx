@@ -1,5 +1,6 @@
-import ShowcaseDetailPage from '../../src/views/ShowcaseDetailPage';
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return <ShowcaseDetailPage slug="story" />;
+// Legacy story route — the revamped site is a one-pager.
+export default function LegacyStoryPage() {
+  redirect('/');
 }

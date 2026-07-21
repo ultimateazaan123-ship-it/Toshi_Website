@@ -1,1 +1,119 @@
-@import '../src/index.css';
+@import 'tailwindcss';
+
+/* ---- Nohemi Font ---- */
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-ExtraBold.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Black.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+
+/* ══════════════════════════════════════════════════
+   TOSHI — black lacquer #050505 · crimson #a81818 · cream #f4eede
+   ══════════════════════════════════════════════════ */
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: 'Nohemi', system-ui, sans-serif;
+  color: #ffffff;
+  background: #050505;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+/* Japanese serif accent (Shippori Mincho, loaded via next/font) */
+.font-jp {
+  font-family: var(--font-shippori), 'Shippori Mincho', Georgia, serif;
+}
+
+/* Lenis smooth scroll */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 5px; background: #050505; }
+::-webkit-scrollbar-track { background: #050505; }
+::-webkit-scrollbar-thumb { background: rgba(168, 24, 24, 0.35); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(168, 24, 24, 0.6); }
+
+/* ---- Selection ---- */
+::selection { background: rgba(168, 24, 24, 0.4); color: #fff; }
+
+/* ---- Film grain ---- */
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  mix-blend-mode: overlay;
+}
+
+/* ---- Button shine ---- */
+@keyframes shine {
+  0% { left: -120%; }
+  40%, 100% { left: 160%; }
+}
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -120%;
+  width: 55%;
+  height: 120%;
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.32) 50%, transparent 80%);
+  transform: skewX(-18deg);
+  animation: shine 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---- Marquee ---- */
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ---- Hero Ken Burns (slow, cinematic) ---- */
+@keyframes kenburns {
+  0% { transform: scale(1.06) translate3d(0, 0, 0); }
+  100% { transform: scale(1.17) translate3d(-1.2%, 1%, 0); }
+}
+.animate-kenburns {
+  animation: kenburns 14s ease-out both;
+  will-change: transform;
+}
+
+/* ---- Card sheen sweep on hover ---- */
+.card-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.09) 50%, transparent 65%);
+  transform: translateX(-110%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.card-sheen:hover::before { transform: translateX(110%); }
+
+/* ---- Utilities ---- */
+.text-balance { text-wrap: balance; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee, .animate-kenburns, .btn-shine::after { animation: none !important; }
+}

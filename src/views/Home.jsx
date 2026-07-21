@@ -1,5 +1,5 @@
-import OkamiShowcase from '../components/OkamiShowcase';
+import ToshiSite from '../components/ToshiSite';
 
 export default function Home() {
-  return <OkamiShowcase />;
+  return <ToshiSite />;
 }
