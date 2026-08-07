@@ -1,7 +1,7 @@
 import './globals.css';
-import { Shippori_Mincho } from 'next/font/google';
+import { Shippori_Mincho, Zen_Kaku_Gothic_New, Cormorant_Garamond } from 'next/font/google';
 
-// Japanese serif accent font for premium typographic details
+// Elegant Japanese-mincho serif — headlines, the wordmark register
 const shippori = Shippori_Mincho({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
@@ -9,10 +9,27 @@ const shippori = Shippori_Mincho({
   display: 'swap',
 });
 
+// Refined geometric-humanist sans — body copy & UI, pairs classically with mincho serifs
+const zenKaku = Zen_Kaku_Gothic_New({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700', '900'],
+  variable: '--font-zenkaku',
+  display: 'swap',
+});
+
+// Delicate italic serif — small accent lines, echoes the logo's brushed script
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  style: ['italic', 'normal'],
+  variable: '--font-cormorant',
+  display: 'swap',
+});
+
 export const metadata = {
-  title: 'Toshi Sushi & Asia Küche – Freital',
+  title: 'Toshi — Sushi & Asia Küche · Freital',
   description:
-    'Toshi Sushi & Asia Küche in Freital: frisches Sushi, aromatische Bowls und warme Asia-Gerichte – handgemacht mit Premium-Zutaten. Jetzt online bestellen oder abholen!',
+    'Toshi Sushi & Asia Küche in Freital: asiatisch, authentisch, anders. Handgefertigtes Sushi und Asia-Küche mit Premium-Zutaten — jetzt online bestellen oder einen Tisch reservieren.',
   keywords: [
     'Toshi Sushi',
     'Sushi Freital',
@@ -26,9 +43,8 @@ export const metadata = {
   authors: [{ name: 'Toshi Sushi & Asia Küche' }],
   robots: { index: true, follow: true },
   openGraph: {
-    title: 'Toshi Sushi & Asia Küche – Freital',
-    description:
-      'Frisches Sushi, aromatische Bowls und warme Asia-Gerichte in Freital. Täglich geöffnet – jetzt online bestellen!',
+    title: 'Toshi — Sushi & Asia Küche · Freital',
+    description: 'Asiatisch. Authentisch. Anders. Frisches Sushi und Asia-Küche in Freital.',
     type: 'website',
     locale: 'de_DE',
     siteName: 'Toshi Sushi & Asia Küche',
@@ -37,7 +53,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="de" className={shippori.variable}>
+    <html lang="de" className={`${shippori.variable} ${zenKaku.variable} ${cormorant.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

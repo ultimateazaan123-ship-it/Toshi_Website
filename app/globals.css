@@ -1,16 +1,9 @@
 @import 'tailwindcss';
 
-/* ---- Nohemi Font ---- */
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-ExtraBold.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Nohemi'; src: url('/fonts/Nohemi-Black.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
-
 /* ══════════════════════════════════════════════════
-   TOSHI — black lacquer #050505 · crimson #a81818 · cream #f4eede
+   TOSHI — Asian fusion, boutique & refined
+   Palette drawn from the mark: ink lacquer, aged brass,
+   warm parchment, a single muted hanko-stamp red.
    ══════════════════════════════════════════════════ */
 
 html {
@@ -21,17 +14,16 @@ html {
 }
 
 body {
-  font-family: 'Nohemi', system-ui, sans-serif;
-  color: #ffffff;
-  background: #050505;
+  font-family: var(--font-zenkaku), 'Zen Kaku Gothic New', system-ui, sans-serif;
+  color: #f3ead9;
+  background: #14110d;
   overflow-x: hidden;
   overscroll-behavior-y: none;
 }
 
-/* Japanese serif accent (Shippori Mincho, loaded via next/font) */
-.font-jp {
-  font-family: var(--font-shippori), 'Shippori Mincho', Georgia, serif;
-}
+/* Type registers */
+.font-serif { font-family: var(--font-shippori), 'Shippori Mincho', Georgia, serif; }
+.font-accent { font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif; font-style: italic; }
 
 /* Lenis smooth scroll */
 html.lenis, html.lenis body { height: auto; }
@@ -39,74 +31,82 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: hidden; }
 
 /* ---- Scrollbar ---- */
-::-webkit-scrollbar { width: 5px; background: #050505; }
-::-webkit-scrollbar-track { background: #050505; }
-::-webkit-scrollbar-thumb { background: rgba(168, 24, 24, 0.35); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(168, 24, 24, 0.6); }
+::-webkit-scrollbar { width: 5px; background: #14110d; }
+::-webkit-scrollbar-track { background: #14110d; }
+::-webkit-scrollbar-thumb { background: rgba(201, 168, 118, 0.35); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(201, 168, 118, 0.55); }
 
 /* ---- Selection ---- */
-::selection { background: rgba(168, 24, 24, 0.4); color: #fff; }
+::selection { background: rgba(201, 168, 118, 0.35); color: #14110d; }
 
-/* ---- Film grain ---- */
+/* ---- Fine paper grain (subtle — parchment, not TV static) ---- */
 .grain-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
   background-repeat: repeat;
-  background-size: 128px 128px;
+  background-size: 160px 160px;
   mix-blend-mode: overlay;
 }
 
-/* ---- Button shine ---- */
-@keyframes shine {
-  0% { left: -120%; }
-  40%, 100% { left: 160%; }
+/* ---- Gold shimmer sweep (slow, restrained — replaces the old glossy "shine") ---- */
+@keyframes shimmer {
+  0% { left: -130%; }
+  50%, 100% { left: 160%; }
 }
-.btn-shine { position: relative; overflow: hidden; }
-.btn-shine::after {
+.btn-shimmer { position: relative; overflow: hidden; }
+.btn-shimmer::after {
   content: '';
   position: absolute;
-  top: -10%;
-  left: -120%;
-  width: 55%;
-  height: 120%;
-  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.32) 50%, transparent 80%);
-  transform: skewX(-18deg);
-  animation: shine 3.6s ease-in-out infinite;
+  top: -20%;
+  left: -130%;
+  width: 45%;
+  height: 140%;
+  background: linear-gradient(100deg, transparent 25%, rgba(255, 255, 255, 0.22) 50%, transparent 75%);
+  transform: skewX(-16deg);
+  animation: shimmer 5.5s ease-in-out infinite;
   pointer-events: none;
 }
 
-/* ---- Marquee ---- */
-@keyframes marquee {
+/* ---- Ticker ---- */
+@keyframes ticker {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-50%, 0, 0); }
 }
-.animate-marquee {
-  animation: marquee 32s linear infinite;
+.animate-ticker {
+  animation: ticker 46s linear infinite;
   will-change: transform;
   backface-visibility: hidden;
 }
 
 /* ---- Hero Ken Burns (slow, cinematic) ---- */
 @keyframes kenburns {
-  0% { transform: scale(1.06) translate3d(0, 0, 0); }
-  100% { transform: scale(1.17) translate3d(-1.2%, 1%, 0); }
+  0% { transform: scale(1.05) translate3d(0, 0, 0); }
+  100% { transform: scale(1.14) translate3d(-1%, 0.8%, 0); }
 }
 .animate-kenburns {
-  animation: kenburns 14s ease-out both;
+  animation: kenburns 16s ease-out both;
   will-change: transform;
 }
 
-/* ---- Card sheen sweep on hover ---- */
+/* ---- Card sheen sweep on hover (soft, gold-tinted) ---- */
 .card-sheen::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.09) 50%, transparent 65%);
+  background: linear-gradient(115deg, transparent 35%, rgba(230, 200, 140, 0.1) 50%, transparent 65%);
   transform: translateX(-110%);
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 }
 .card-sheen:hover::before { transform: translateX(110%); }
+
+/* ---- Hairline utilities ---- */
+.hairline-gold { background: linear-gradient(to right, transparent, rgba(201, 168, 118, 0.55), transparent); }
+
+/* ---- Custom cursor (desktop, fine-pointer only) ---- */
+@media (hover: hover) and (pointer: fine) {
+  body, a, button { cursor: none; }
+}
 
 /* ---- Utilities ---- */
 .text-balance { text-wrap: balance; }
@@ -115,5 +115,5 @@ html.lenis, html.lenis body { height: auto; }
 
 /* ---- Reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee, .animate-kenburns, .btn-shine::after { animation: none !important; }
+  .animate-ticker, .animate-kenburns, .btn-shimmer::after { animation: none !important; }
 }
