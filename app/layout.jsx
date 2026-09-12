@@ -1,11 +1,11 @@
 import './globals.css';
-import { Shippori_Mincho, Zen_Kaku_Gothic_New, Cormorant_Garamond } from 'next/font/google';
+import { Marcellus, Zen_Kaku_Gothic_New, Cormorant_Garamond } from 'next/font/google';
 
-// Elegant Japanese-mincho serif — headlines, the wordmark register
-const shippori = Shippori_Mincho({
+// Client-approved headline serif — clear, timeless luxury antiqua (only ships in Regular/400)
+const marcellus = Marcellus({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-shippori',
+  weight: ['400'],
+  variable: '--font-marcellus',
   display: 'swap',
 });
 
@@ -53,7 +53,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="de" className={`${shippori.variable} ${zenKaku.variable} ${cormorant.variable}`}>
+    <html lang="de" className={`${marcellus.variable} ${zenKaku.variable} ${cormorant.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

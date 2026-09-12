@@ -22,7 +22,7 @@ body {
 }
 
 /* Type registers */
-.font-serif { font-family: var(--font-shippori), 'Shippori Mincho', Georgia, serif; }
+.font-serif { font-family: var(--font-marcellus), 'Marcellus', Georgia, serif; font-weight: 400; }
 .font-accent { font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif; font-style: italic; }
 
 /* Lenis smooth scroll */

@@ -9,7 +9,7 @@ import ToshiCursor from './ToshiCursor';
 /* ══════════════════════════════════════════════════
    TOSHI SUSHI & ASIA KÜCHE — one-page site
    Palette: ink lacquer #14110d · aged brass #c9a876 · parchment #f3ead9 · hanko red #8c2a26
-   Type: Shippori Mincho (serif headline) · Zen Kaku Gothic New (sans body) · Cormorant italic (accent)
+   Type: Marcellus (serif headline) · Zen Kaku Gothic New (sans body) · Cormorant italic (accent)
    ══════════════════════════════════════════════════ */
 
 const LIEFERANDO = 'https://www.lieferando.de/speisekarte/toshi-sushi-asia-kuche-freital';
