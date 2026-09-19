@@ -14,6 +14,9 @@ import ToshiCursor from './ToshiCursor';
 
 const LIEFERANDO = 'https://www.lieferando.de/speisekarte/toshi-sushi-asia-kuche-freital';
 const INSTAGRAM = 'https://www.instagram.com/toshi.dresden/';
+const KNIFE_IMAGE = '/images/knife-freshness.webp';
+const SASHIMI_IMAGE = '/images/sashimi-freshness.webp';
+const COOKIE_KEY = 'toshi-cookie-consent';
 
 const GOLD = '#c9a876';
 const STAMP = '#8c2a26';
@@ -24,15 +27,53 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 1.2, ease: EASE } },
 };
 
-// Mo–Do 11–22 · Fr–Sa 11–23 · So 12–22
-function isOpenNow() {
+/* ---------- Order Modal — store/location data ---------- */
+function checkStoreOpen(slots) {
   const now = new Date();
-  const de = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  const day = de.getDay(); // 0 = So
-  const total = de.getHours() * 60 + de.getMinutes();
-  if (day === 0) return total >= 12 * 60 && total < 22 * 60;
-  if (day === 5 || day === 6) return total >= 11 * 60 && total < 23 * 60;
-  return total >= 11 * 60 && total < 22 * 60;
+  const gt = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+  const day = gt.getDay();
+  const total = gt.getHours() * 60 + gt.getMinutes();
+  return slots.some((s) => s.days.includes(day) && total >= s.open && total < s.close);
+}
+
+const ORDER_STORES = [
+  {
+    id: 'buehlau',
+    name: 'Dresden Bühlau',
+    address: 'Elisabethstraße 19',
+    city: '01324 Dresden',
+    postcodes: ['01097', '01099', '01237', '01277', '01279', '01307', '01309', '01324', '01326', '01328', '01454', '01477'],
+    comingSoon: false,
+    deliveryOnly: false,
+    openHours: [
+      { days: [1, 2, 3, 4], open: 11 * 60 + 30, close: 21 * 60 },
+      { days: [5, 6, 0], open: 11 * 60 + 30, close: 21 * 60 + 30 },
+    ],
+  },
+  {
+    id: 'freital',
+    name: 'Freital',
+    address: 'Dresdner Str. 220',
+    city: '01705 Freital',
+    postcodes: ['01156', '01157', '01159', '01169', '01187', '01189', '01217', '01219', '01705', '01728', '01731', '01734', '01737', '01738'],
+    comingSoon: false,
+    deliveryOnly: false,
+    openHours: [{ days: [0, 1, 2, 3, 4, 5, 6], open: 11 * 60 + 30, close: 21 * 60 }],
+  },
+  {
+    id: 'klotzsche',
+    name: 'Dresden-Klotzsche',
+    address: 'Nur Lieferung',
+    city: '',
+    postcodes: ['01097', '01099', '01108', '01109', '01127', '01129', '01139', '01445', '01458', '01465', '01468', '01471', '01640', '01689'],
+    comingSoon: false,
+    deliveryOnly: true,
+    openHours: [{ days: [0, 1, 2, 3, 4, 5, 6], open: 11 * 60 + 30, close: 21 * 60 }],
+  },
+];
+
+function findStoresByPostcode(code) {
+  return ORDER_STORES.filter((s) => s.postcodes.includes(code.trim()));
 }
 
 /* ---------- Ornament (Japanese diamond divider) ---------- */
@@ -60,7 +101,7 @@ function CornerFrame({ inset = -12 }) {
 }
 
 /* ---------- Navbar ---------- */
-function Navbar() {
+function Navbar({ onOrderClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -117,15 +158,14 @@ function Navbar() {
 
         {/* Right */}
         <div className="flex items-center gap-2.5">
-          <a
-            href={LIEFERANDO}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={onOrderClick}
             data-cursor-hover
             className="group hidden sm:flex items-center gap-1.5 px-5 md:px-6 py-2 md:py-2.5 rounded-full border border-[#c9a876]/45 hover:border-[#c9a876] hover:bg-[#c9a876] text-[#f3ead9] hover:text-[#14110d] text-[10.5px] md:text-[11.5px] tracking-[0.16em] uppercase font-medium transition-all duration-400"
           >
             Bestellen
-          </a>
+          </button>
 
           {/* Hamburger — mobile */}
           <button
@@ -164,15 +204,13 @@ function Navbar() {
                 <span className="w-1 h-1 rotate-45" style={{ background: GOLD }} />
               </motion.a>
             ))}
-            <a
-              href={LIEFERANDO}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMenuOpen(false)}
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onOrderClick(); }}
               className="flex items-center justify-center gap-2 mx-5 my-4 py-3.5 rounded-full border border-[#c9a876]/50 text-[#c9a876] text-xs tracking-[0.14em] uppercase font-medium"
             >
               Online Bestellen
-            </a>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -184,8 +222,8 @@ function Navbar() {
 const HERO_IMAGES = ['/images/TOSHI_img2.webp', '/images/TOSHI_img4.webp', '/images/TOSHI_img6.webp'];
 const WORDMARK = 'Toshi'.split('');
 
-function HeroSection() {
-  const [openNow, setOpenNow] = useState(false);
+function HeroSection({ onOrderClick }) {
+  const [storeOpen, setStoreOpen] = useState({});
   const [slide, setSlide] = useState(0);
   const ref = useRef(null);
 
@@ -194,7 +232,11 @@ function HeroSection() {
   const contentOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
   const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
 
-  useEffect(() => { setOpenNow(isOpenNow()); }, []);
+  useEffect(() => {
+    const result = {};
+    ORDER_STORES.forEach((s) => { result[s.id] = checkStoreOpen(s.openHours); });
+    setStoreOpen(result);
+  }, []);
   useEffect(() => {
     const t = setInterval(() => setSlide((p) => (p + 1) % HERO_IMAGES.length), 8000);
     return () => clearInterval(t);
@@ -303,15 +345,14 @@ function HeroSection() {
           transition={{ duration: 1, delay: 1.4, ease: EASE }}
           className="flex flex-col items-center gap-6"
         >
-          <a
-            href={LIEFERANDO}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={onOrderClick}
             data-cursor-hover
             className="btn-shimmer flex items-center gap-3 px-10 py-4 md:px-12 md:py-[1.15rem] bg-[#c9a876] hover:bg-[#ddc59a] text-[#14110d] font-medium text-xs md:text-[13px] tracking-[0.2em] uppercase rounded-full transition-colors duration-400 shadow-[0_10px_36px_rgba(201,168,118,0.22)]"
           >
             Online Bestellen
-          </a>
+          </button>
           <a
             href="#kontakt"
             data-cursor-hover
@@ -322,24 +363,40 @@ function HeroSection() {
         </motion.div>
       </motion.div>
 
-      {/* Location pill — bottom */}
+      {/* Locations bar — pinned to bottom */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 1.6, ease: EASE }}
-        className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-center pb-6 md:pb-7"
+        className="absolute bottom-0 inset-x-0 z-10"
       >
-        <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#14110d]/55 backdrop-blur-sm border border-[#c9a876]/25">
-          <span className="relative flex w-1.5 h-1.5 flex-shrink-0">
-            {openNow && <span className="absolute inline-flex h-full w-full rounded-full bg-[#8fae86] opacity-60 animate-ping" />}
-            <span className={`relative inline-flex w-1.5 h-1.5 rounded-full ${openNow ? 'bg-[#8fae86]' : 'bg-[#8c2a26]'}`} />
-          </span>
-          <div className="text-left">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] leading-none text-[#f3ead9]">Freital</p>
-            <p className="text-[10.5px] font-normal leading-none mt-1 text-[#f3ead9]/55">Dresdner Str. 106</p>
+        {/* MOBILE: full-width bar */}
+        <div className="md:hidden flex border-t border-[#c9a876]/20 bg-[#14110d]/70 backdrop-blur-sm">
+          {ORDER_STORES.map((loc, i) => (
+            <div key={loc.id} className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 ${i < ORDER_STORES.length - 1 ? 'border-r border-[#c9a876]/15' : ''}`}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: storeOpen[loc.id] ? '#8fae86' : STAMP }} />
+              <p className="text-[9px] font-semibold uppercase tracking-[0.05em] text-[#f3ead9] text-center leading-tight">{loc.name}</p>
+              <p className="text-[8px] font-normal text-[#f3ead9]/50 text-center leading-tight">{loc.deliveryOnly ? 'Nur Lieferung' : loc.address}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* DESKTOP: pill */}
+        <div className="hidden md:flex items-center justify-center pb-7">
+          <div className="flex items-center rounded-full bg-[#14110d]/55 backdrop-blur-sm border border-[#c9a876]/25 overflow-hidden">
+            {ORDER_STORES.map((loc, i) => (
+              <div key={loc.id} className={`flex items-center gap-2.5 px-6 py-3 ${i < ORDER_STORES.length - 1 ? 'border-r border-[#c9a876]/20' : ''}`}>
+                <span className="relative flex w-1.5 h-1.5 flex-shrink-0">
+                  {storeOpen[loc.id] && <span className="absolute inline-flex h-full w-full rounded-full bg-[#8fae86] opacity-60 animate-ping" />}
+                  <span className="relative inline-flex w-1.5 h-1.5 rounded-full" style={{ background: storeOpen[loc.id] ? '#8fae86' : STAMP }} />
+                </span>
+                <div className="text-left">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] leading-none text-[#f3ead9]">{loc.name}</p>
+                  <p className="text-[10.5px] font-normal leading-none mt-1 text-[#f3ead9]/55">{loc.deliveryOnly ? 'Nur Lieferung' : loc.address}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="w-px h-6 bg-[#c9a876]/20 mx-1" />
-          <p className="text-[10.5px] font-normal text-[#f3ead9]/55">{openNow ? 'Jetzt geöffnet' : 'Täglich ab 11:00 Uhr'}</p>
         </div>
       </motion.div>
     </section>
@@ -369,7 +426,7 @@ function TickerStrip() {
 }
 
 /* ---------- Order Section ---------- */
-function OrderSection() {
+function OrderSection({ onOrderClick }) {
   return (
     <section id="bestellen" className="relative bg-[#f3ead9] overflow-hidden">
       {/* Subtle texture watermark */}
@@ -396,14 +453,13 @@ function OrderSection() {
             <p className="text-[15px] text-[#14110d]/65 font-normal leading-relaxed max-w-[280px] mx-auto mb-8">
               Bestell dein Lieblings-Sushi zur Lieferung oder Abholung — frisch gerollt, mit Sorgfalt verpackt.
             </p>
-            <a
-              href={LIEFERANDO}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={onOrderClick}
               className="inline-flex items-center gap-2.5 px-8 py-4 bg-[#14110d] hover:bg-[#221d17] text-[#f3ead9] font-medium text-xs tracking-[0.16em] uppercase rounded-full transition-all duration-400 border border-[#c9a876]/40"
             >
               Online Bestellen
-            </a>
+            </button>
           </motion.div>
         </div>
       </div>
@@ -426,15 +482,14 @@ function OrderSection() {
               <p className="text-xl text-[#14110d]/65 font-normal leading-relaxed mb-10 max-w-sm">
                 Bestell dein Lieblings-Sushi zur Lieferung oder Abholung — frisch gerollt, mit Sorgfalt verpackt.
               </p>
-              <a
-                href={LIEFERANDO}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={onOrderClick}
                 data-cursor-hover
                 className="group inline-flex items-center gap-2.5 px-8 py-4 bg-[#14110d] hover:bg-[#221d17] text-[#f3ead9] font-medium text-xs tracking-[0.16em] uppercase rounded-full transition-all duration-400 border border-[#c9a876]/40 hover:border-[#c9a876] hover:-translate-y-0.5"
               >
                 Online Bestellen
-              </a>
+              </button>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 32 }}
@@ -451,6 +506,100 @@ function OrderSection() {
               </div>
             </motion.div>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Freshness Guarantee ---------- */
+function FreshnessSection() {
+  const GUARANTEES = [
+    'Täglich frischer Fisch — niemals tiefgekühlt',
+    'Von Hand geschnitten, nicht maschinell',
+    'Ausgewählte Zutaten, ohne Kompromisse',
+  ];
+
+  return (
+    <section id="frische" className="relative overflow-hidden bg-[#0c0a08] py-24 md:py-36">
+      {/* Ambient glow + watermark, same language as Menu/About */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(201,168,118,0.05) 0%, transparent 65%)' }} />
+        <span className="font-serif absolute -right-10 bottom-0 text-[20rem] leading-none text-[#c9a876]/[0.03] select-none hidden lg:block" aria-hidden="true">鮮</span>
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6 md:px-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24 items-center">
+          {/* Images — knife + sashimi collage, mirrors "Über uns" */}
+          <motion.div
+            initial={{ opacity: 0, x: -32 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 1.2, ease: EASE }}
+            className="relative order-2 lg:order-1"
+          >
+            <div className="relative max-w-[480px]">
+              <CornerFrame />
+              <div className="card-sheen relative rounded-[4px] overflow-hidden aspect-[4/5] shadow-[0_24px_64px_rgba(0,0,0,0.5)] group">
+                <img src={KNIFE_IMAGE} alt="Scharfes Messer beim Zuschneiden von frischem Fisch" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-[1.04]" loading="lazy" />
+              </div>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.1, delay: 0.2, ease: EASE }}
+              className="absolute -bottom-8 -right-2 md:-right-8 w-[52%] rounded-[3px] overflow-hidden aspect-square shadow-[0_20px_50px_rgba(0,0,0,0.55)] border-4 border-[#0c0a08]"
+            >
+              <img src={SASHIMI_IMAGE} alt="Frisches Lachs-Sashimi" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            </motion.div>
+            {/* Hanko stamp — small, quiet, on-brand */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, delay: 0.45, ease: EASE }}
+              className="absolute -top-5 -left-3 md:-left-6 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-[0_10px_28px_rgba(140,42,38,0.35)]"
+              style={{ background: STAMP }}
+            >
+              <span className="font-serif text-[#f3ead9] text-xl md:text-2xl">鮮</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Text — on solid ink, fully legible */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="order-1 lg:order-2"
+          >
+            <p className="font-accent text-2xl text-[#e5cb99] mb-4">Frischegarantie</p>
+            <h2 className="font-serif text-[#f6efdf] leading-[1.08] mb-7" style={{ fontSize: 'clamp(2.6rem, 4.6vw, 4rem)' }}>
+              Frische, die man schmeckt.
+            </h2>
+            <p className="text-lg text-[#f3ead9]/65 leading-relaxed mb-9 max-w-lg">
+              Unser Fisch wird täglich frisch geliefert und von Hand geschnitten — nie aus der Tiefkühltruhe, nie auf Vorrat. Mit geschärften Klingen und geschultem Auge verwandeln wir nur ausgewählte Zutaten in jedes Gericht, das wir servieren.
+            </p>
+            <ul className="flex flex-col gap-4 mb-10">
+              {GUARANTEES.map((g, i) => (
+                <motion.li
+                  key={g}
+                  initial={{ opacity: 0, x: -14 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.75, delay: i * 0.12, ease: EASE }}
+                  className="flex items-center gap-3 text-[15px] text-[#f3ead9]/80"
+                >
+                  <span className="w-1.5 h-1.5 rotate-45 flex-shrink-0" style={{ background: GOLD }} />
+                  {g}
+                </motion.li>
+              ))}
+            </ul>
+            <a href="#speisekarte" data-cursor-hover className="group inline-flex items-center gap-2 text-[#f3ead9]/75 hover:text-[#c9a876] text-[11px] tracking-[0.2em] uppercase font-medium transition-colors duration-400">
+              <span className="pb-0.5 border-b border-current/40 group-hover:border-current">Zur Speisekarte</span>
+            </a>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -689,7 +838,7 @@ function MenuSection({ onItemClick }) {
 }
 
 /* ---------- Product Modal ---------- */
-function ProductModal({ item, onClose }) {
+function ProductModal({ item, onClose, onOrderClick }) {
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
@@ -755,16 +904,404 @@ function ProductModal({ item, onClose }) {
             </div>
 
             <div className="mt-6 pt-5 border-t border-white/[0.06]">
-              <a
-                href={LIEFERANDO}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => { onClose(); onOrderClick(); }}
                 data-cursor-hover
                 className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full bg-[#c9a876] hover:bg-[#ddc59a] text-[#14110d] font-semibold text-sm tracking-[0.1em] uppercase transition-all duration-300"
               >
                 Online Bestellen
-              </a>
+              </button>
             </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ---------- Order Modal (delivery/pickup → postcode → store) ---------- */
+function OrderModal({ onClose }) {
+  const [storeOpen, setStoreOpen] = useState({});
+  useEffect(() => {
+    const result = {};
+    ORDER_STORES.forEach((s) => { result[s.id] = checkStoreOpen(s.openHours); });
+    setStoreOpen(result);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const [step, setStep] = useState(1);
+  const [orderType, setOrderType] = useState(null);
+  const [postcode, setPostcode] = useState('');
+  const [postcodeMatches, setPostcodeMatches] = useState(null);
+  const [postcodeNotFound, setPostcodeNotFound] = useState(false);
+  const [expandedStore, setExpandedStore] = useState(null);
+
+  const handlePostcodeLookup = () => {
+    const matches = findStoresByPostcode(postcode);
+    if (matches.length > 0) {
+      setPostcodeMatches(matches);
+      setPostcodeNotFound(false);
+      setExpandedStore(matches[0].id);
+    } else {
+      setPostcodeMatches(null);
+      setPostcodeNotFound(true);
+    }
+  };
+
+  const handleSelectOrderType = (type) => {
+    setOrderType(type);
+    setStep(2);
+  };
+
+  const stepTitles = { 1: 'Lieferung oder\nAbholung?', 2: 'Standort\nwählen' };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[300] flex items-center justify-center px-4 py-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22 }}
+    >
+      {/* Backdrop */}
+      <motion.div
+        className="absolute inset-0 bg-[#0c0a08]/85 backdrop-blur-md"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <motion.div
+        className="relative z-10 w-full max-w-[440px] max-h-[92vh] flex flex-col"
+        initial={{ scale: 0.86, opacity: 0, y: 28 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 14 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 26, mass: 0.75 }}
+      >
+        <div
+          className="relative rounded-3xl overflow-hidden border border-[#c9a876]/25 flex flex-col min-h-0"
+          style={{ boxShadow: '0 40px 120px rgba(0,0,0,0.7), 0 0 40px rgba(201,168,118,0.06)' }}
+        >
+          {/* ── Ink header ── */}
+          <div className="relative h-[112px] overflow-hidden flex-shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1c1712] via-[#14110d] to-[#0c0a08]" />
+            <div className="absolute inset-0 overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-[#c9a876]/[0.09] to-transparent"
+                style={{ animation: 'shimmer 5s ease-in-out infinite' }}
+              />
+            </div>
+            <div className="absolute -top-14 -right-14 w-52 h-52 rounded-full bg-[#c9a876]/[0.05]" />
+            <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-black/20" />
+
+            {/* Step indicators */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+              {[1, 2].map((s) => (
+                <div
+                  key={s}
+                  className={`h-[3px] rounded-full transition-all duration-300 ${
+                    s === step ? 'w-6' : s < step ? 'w-6' : 'w-4'
+                  }`}
+                  style={{ background: s === step ? GOLD : s < step ? 'rgba(201,168,118,0.6)' : 'rgba(255,255,255,0.18)' }}
+                />
+              ))}
+            </div>
+
+            {/* Back button */}
+            {step === 2 && (
+              <button
+                type="button"
+                onClick={() => { setStep(1); setPostcode(''); setPostcodeMatches(null); setPostcodeNotFound(false); }}
+                data-cursor-hover
+                className="absolute top-3.5 left-3.5 z-20 w-8 h-8 rounded-full bg-[#c9a876]/10 border border-[#c9a876]/30 hover:bg-[#c9a876]/20 flex items-center justify-center transition-all duration-300"
+              >
+                <svg className="w-3.5 h-3.5 text-[#f3ead9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={onClose}
+              data-cursor-hover
+              className="absolute top-3.5 right-3.5 z-20 w-8 h-8 rounded-full bg-[#c9a876]/10 border border-[#c9a876]/30 hover:bg-[#c9a876]/20 flex items-center justify-center transition-all duration-300 hover:rotate-90"
+            >
+              <svg className="w-[11px] h-[11px] text-[#f3ead9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Title */}
+            <div className="relative z-10 flex flex-col items-center justify-center h-full px-16 pt-3">
+              <AnimatePresence mode="wait">
+                <motion.h2
+                  key={step}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="font-serif text-[24px] sm:text-[26px] text-[#f6efdf] leading-[1.15] text-center whitespace-pre-line"
+                >
+                  {stepTitles[step]}
+                </motion.h2>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ── Parchment body ── */}
+          <div className="bg-[#f3ead9] px-5 sm:px-6 pt-5 pb-5 overflow-y-auto flex-1 min-h-0" style={{ scrollbarWidth: 'none' }}>
+            <AnimatePresence mode="wait">
+
+              {/* ── STEP 1: Delivery or Pickup ── */}
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.22 }}
+                  className="space-y-4"
+                >
+                  {/* Choice buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectOrderType('delivery')}
+                      data-cursor-hover
+                      className="group flex flex-col items-center gap-2.5 p-4 rounded-[6px] border-2 border-[#14110d]/12 hover:border-[#c9a876] hover:bg-[#c9a876]/[0.08] transition-all duration-200"
+                    >
+                      <div className="w-11 h-11 rounded-[4px] bg-[#14110d]/[0.06] group-hover:bg-[#c9a876] flex items-center justify-center transition-colors duration-200">
+                        <svg className="w-5 h-5 text-[#14110d]/45 group-hover:text-[#14110d] transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z" />
+                          <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+                        </svg>
+                      </div>
+                      <span className="text-[14px] font-medium text-[#14110d] group-hover:text-[#8c2a26] transition-colors duration-200">Lieferung</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectOrderType('pickup')}
+                      data-cursor-hover
+                      className="group flex flex-col items-center gap-2.5 p-4 rounded-[6px] border-2 border-[#14110d]/12 hover:border-[#c9a876] hover:bg-[#c9a876]/[0.08] transition-all duration-200"
+                    >
+                      <div className="w-11 h-11 rounded-[4px] bg-[#14110d]/[0.06] group-hover:bg-[#c9a876] flex items-center justify-center transition-colors duration-200">
+                        <svg className="w-5 h-5 text-[#14110d]/45 group-hover:text-[#14110d] transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
+                        </svg>
+                      </div>
+                      <span className="text-[14px] font-medium text-[#14110d] group-hover:text-[#8c2a26] transition-colors duration-200">Abholung</span>
+                    </button>
+                  </div>
+
+                  {/* Store info */}
+                  <div className="rounded-[6px] border border-[#14110d]/10 bg-white/40 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#14110d]/10">
+                      <svg className="w-3.5 h-3.5 text-[#c9a876]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#14110d]/45">Unsere Standorte</span>
+                    </div>
+                    {ORDER_STORES.map((store, i) => {
+                      const isOpen = storeOpen[store.id];
+                      return (
+                        <div key={store.id} className={`flex items-center gap-3 px-4 py-3 ${i < ORDER_STORES.length - 1 ? 'border-b border-[#14110d]/10' : ''}`}>
+                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: isOpen ? '#8fae86' : STAMP }} />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-serif text-[15px] leading-none text-[#14110d]">{store.name}</p>
+                            {!store.deliveryOnly && (
+                              <p className="text-[11px] text-[#14110d]/45 font-normal mt-1">{store.address}{store.city ? ` · ${store.city}` : ''}</p>
+                            )}
+                          </div>
+                          {store.deliveryOnly ? (
+                            <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#c9a876]/10 border border-[#c9a876]/30 text-[#a1854f] text-[10px] font-medium uppercase tracking-[0.1em]">Nur Lieferung</span>
+                          ) : isOpen ? (
+                            <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#8fae86]/10 border border-[#8fae86]/35 text-[#5f7d57] text-[10px] font-medium uppercase tracking-[0.1em]">Geöffnet</span>
+                          ) : (
+                            <span className="flex-shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-medium uppercase tracking-[0.1em]" style={{ background: 'rgba(140,42,38,0.08)', borderColor: 'rgba(140,42,38,0.25)', color: STAMP }}>Geschlossen</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 2: Choose Store ── */}
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 16 }}
+                  transition={{ duration: 0.22 }}
+                  className="space-y-3"
+                >
+                  {/* Order type badge */}
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#c9a876]/10 border border-[#c9a876]/30">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: GOLD }} />
+                      <span className="text-[11px] font-medium text-[#a1854f] uppercase tracking-[0.1em]">
+                        {orderType === 'delivery' ? 'Lieferung' : 'Abholung'}
+                      </span>
+                    </span>
+                  </div>
+
+                  {/* Postcode lookup */}
+                  <div className="rounded-[6px] border border-[#14110d]/12 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-white/40 border-b border-[#14110d]/10">
+                      <svg className="w-3.5 h-3.5 text-[#c9a876]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+                      </svg>
+                      <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#14110d]/50">PLZ-Suche</span>
+                    </div>
+                    <div className="flex gap-0">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="Deine Postleitzahl…"
+                        value={postcode}
+                        onChange={(e) => {
+                          setPostcode(e.target.value.replace(/\D/g, ''));
+                          setPostcodeMatches(null);
+                          setPostcodeNotFound(false);
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && postcode.length === 5 && handlePostcodeLookup()}
+                        className="flex-1 px-4 py-3 text-[14px] font-medium text-[#14110d] placeholder:text-[#14110d]/30 outline-none bg-white/70"
+                      />
+                      <button
+                        type="button"
+                        onClick={handlePostcodeLookup}
+                        disabled={postcode.length !== 5}
+                        data-cursor-hover
+                        className="px-4 py-3 bg-[#14110d] disabled:bg-[#14110d]/20 text-[#f3ead9] text-[12px] font-medium uppercase tracking-[0.1em] transition-colors duration-200 hover:bg-[#221d17] disabled:cursor-not-allowed"
+                      >
+                        Suchen
+                      </button>
+                    </div>
+
+                    {/* Postcode result */}
+                    <AnimatePresence>
+                      {postcodeNotFound && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <p className="px-4 py-2.5 text-[12px] font-normal text-[#14110d]/60 border-t border-[#14110d]/10 bg-white/40">
+                            Keine Lieferung in deine PLZ — wähle einen Standort zur Abholung.
+                          </p>
+                        </motion.div>
+                      )}
+                      {postcodeMatches && postcodeMatches.length > 0 && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden border-t border-[#14110d]/10"
+                        >
+                          <p className="px-4 pt-2.5 pb-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[#a1854f]">
+                            {postcodeMatches.length > 1 ? 'Mehrere Standorte verfügbar:' : 'Standort gefunden:'}
+                          </p>
+                          {postcodeMatches.map((s) => (
+                            <p key={s.id} className="px-4 pb-2.5 font-serif text-[14px] text-[#14110d]">→ {s.name}</p>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Store cards */}
+                  <div className="space-y-2">
+                    {ORDER_STORES.map((store) => {
+                      const isHighlighted = postcodeMatches?.some((m) => m.id === store.id);
+                      const isExpanded = expandedStore === store.id;
+                      return (
+                        <div
+                          key={store.id}
+                          className="rounded-[6px] border overflow-hidden transition-all duration-200"
+                          style={
+                            isHighlighted
+                              ? { borderColor: GOLD, background: 'rgba(201,168,118,0.08)', boxShadow: '0 4px 20px rgba(201,168,118,0.15)' }
+                              : { borderColor: 'rgba(20,17,13,0.12)', background: 'rgba(255,255,255,0.4)' }
+                          }
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setExpandedStore(isExpanded ? null : store.id)}
+                            data-cursor-hover
+                            className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+                          >
+                            <div
+                              className="w-9 h-9 rounded-[4px] flex-shrink-0 flex items-center justify-center"
+                              style={{ background: isHighlighted ? GOLD : 'rgba(20,17,13,0.06)' }}
+                            >
+                              <svg className="w-4 h-4" style={{ color: isHighlighted ? '#14110d' : 'rgba(20,17,13,0.45)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-serif text-[15px] leading-none text-[#14110d]">{store.name}</p>
+                              {!store.deliveryOnly && (
+                                <p className="text-[11px] text-[#14110d]/45 font-normal mt-1">{store.address}{store.city ? ` · ${store.city}` : ''}</p>
+                              )}
+                            </div>
+                            <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                              <svg className="w-4 h-4 text-[#14110d]/35 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </motion.div>
+                          </button>
+
+                          {/* Expanded: postcode area + order button */}
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                                className="overflow-hidden border-t border-[#14110d]/10"
+                              >
+                                <div className="px-4 pt-3 pb-3">
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#14110d]/40 mb-1.5">Liefergebiet PLZ</p>
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {store.postcodes.map((z) => (
+                                      <span key={z} className="text-[10px] font-medium text-[#14110d]/60 bg-[#14110d]/[0.04] border border-[#14110d]/10 rounded px-1.5 py-0.5">{z}</span>
+                                    ))}
+                                  </div>
+                                  <a
+                                    href={LIEFERANDO}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    data-cursor-hover
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#c9a876] hover:bg-[#ddc59a] text-[#14110d] text-[12px] font-semibold uppercase tracking-[0.1em] transition-colors duration-200"
+                                  >
+                                    Hier bestellen
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                  </a>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>
@@ -964,7 +1501,7 @@ function PhotoWall() {
 }
 
 /* ---------- Kontakt / Location ---------- */
-function LocationSection() {
+function LocationSection({ mapsConsent, onEnableMaps, onOrderClick }) {
   const HOURS = [
     { days: 'Mo – Do', time: '11:00 – 22:00' },
     { days: 'Fr – Sa', time: '11:00 – 23:00' },
@@ -1009,15 +1546,14 @@ function LocationSection() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <a
-                href={LIEFERANDO}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={onOrderClick}
                 data-cursor-hover
                 className="group inline-flex items-center gap-2.5 px-7 py-3.5 bg-[#14110d] hover:bg-[#221d17] text-[#f3ead9] font-medium text-xs tracking-[0.14em] uppercase rounded-full transition-all duration-400 border border-[#c9a876]/40 hover:border-[#c9a876] hover:-translate-y-0.5"
               >
                 Online Bestellen
-              </a>
+              </button>
               <a
                 href={INSTAGRAM}
                 target="_blank"
@@ -1039,15 +1575,32 @@ function LocationSection() {
             className="relative min-h-[380px] lg:min-h-0"
           >
             <div className="absolute inset-0 rounded-[4px] overflow-hidden shadow-[0_24px_64px_rgba(20,17,13,0.22)] border border-[#14110d]/10">
-              <iframe
-                title="Toshi Sushi Standort"
-                src="https://www.google.com/maps?q=Dresdner+Str.+106,+01705+Freital,+Germany&output=embed"
-                className="w-full h-full"
-                style={{ border: 0, filter: 'saturate(0.75) sepia(0.12)' }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              />
+              {mapsConsent ? (
+                <iframe
+                  title="Toshi Sushi Standort"
+                  src="https://www.google.com/maps?q=Dresdner+Str.+106,+01705+Freital,+Germany&output=embed"
+                  className="w-full h-full"
+                  style={{ border: 0, filter: 'saturate(0.75) sepia(0.12)' }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center gap-4 bg-[#14110d] px-8">
+                  <span className="font-serif text-3xl text-[#c9a876]/70">鮨</span>
+                  <p className="text-sm text-[#f3ead9]/55 max-w-[280px] leading-relaxed">
+                    Für die Karte wird eine Verbindung zu Google Maps hergestellt.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onEnableMaps}
+                    data-cursor-hover
+                    className="mt-1 inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#c9a876]/40 hover:border-[#c9a876] hover:bg-[#c9a876] text-[#f3ead9] hover:text-[#14110d] text-xs tracking-[0.14em] uppercase font-medium transition-all duration-300"
+                  >
+                    Karte anzeigen
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -1151,12 +1704,89 @@ function Footer() {
   );
 }
 
+/* ---------- Cookie Banner ---------- */
+function CookieBanner({ show, onAccept, onDecline }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 40, opacity: 0 }}
+          transition={{ duration: 0.7, ease: EASE }}
+          className="fixed bottom-0 inset-x-0 z-[90] px-4 pb-4 md:px-6 md:pb-6"
+          role="dialog"
+          aria-label="Cookie-Einstellungen"
+        >
+          <div className="mx-auto max-w-3xl rounded-2xl border border-[#c9a876]/20 bg-[#14110d]/97 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] px-6 py-5 md:px-8 md:py-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+              <div className="flex-1">
+                <p className="text-[11px] tracking-[0.3em] uppercase text-[#c9a876]/85 font-medium mb-2">Cookies</p>
+                <p className="text-sm text-[#f3ead9]/65 leading-relaxed">
+                  Wir verwenden Cookies für grundlegende Funktionen und optional für eingebettete Inhalte wie Google Maps. Du kannst deine Wahl jederzeit über die Karte im Kontaktbereich ändern.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0 self-end md:self-auto">
+                <button
+                  type="button"
+                  onClick={onDecline}
+                  className="px-5 py-3 text-xs tracking-[0.14em] uppercase font-medium text-[#f3ead9]/55 hover:text-[#f3ead9] transition-colors duration-300 whitespace-nowrap"
+                >
+                  Ablehnen
+                </button>
+                <button
+                  type="button"
+                  onClick={onAccept}
+                  data-cursor-hover
+                  className="px-6 py-3 rounded-full bg-[#c9a876] hover:bg-[#ddc59a] text-[#14110d] text-xs tracking-[0.14em] uppercase font-medium transition-colors duration-300 whitespace-nowrap"
+                >
+                  Akzeptieren
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ---------- Page ---------- */
 export default function ToshiSite() {
   const [modalItem, setModalItem] = useState(null);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [cookieChoice, setCookieChoice] = useState(null);
+  const [showCookieBanner, setShowCookieBanner] = useState(false);
   const lenisRef = useRef(null);
   const { scrollYProgress } = useScroll();
+
+  const openOrderModal = () => setOrderModalOpen(true);
+
+  // Read any stored cookie choice on mount; show the banner only if none was made yet
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(COOKIE_KEY);
+      if (saved === 'accepted' || saved === 'declined') {
+        setCookieChoice(saved);
+      } else {
+        setShowCookieBanner(true);
+      }
+    } catch {
+      setShowCookieBanner(true);
+    }
+  }, []);
+
+  const acceptCookies = () => {
+    setCookieChoice('accepted');
+    setShowCookieBanner(false);
+    try { window.localStorage.setItem(COOKIE_KEY, 'accepted'); } catch {}
+  };
+  const declineCookies = () => {
+    setCookieChoice('declined');
+    setShowCookieBanner(false);
+    try { window.localStorage.setItem(COOKIE_KEY, 'declined'); } catch {}
+  };
 
   // Buttery smooth scrolling (Lenis) — created stopped, released once the preloader finishes
   useEffect(() => {
@@ -1183,9 +1813,9 @@ export default function ToshiSite() {
     };
   }, []);
 
-  // Lock scroll while the preloader is showing, or the product modal is open
+  // Lock scroll while the preloader is showing, or a modal is open
   useEffect(() => {
-    const shouldLock = !loaded || Boolean(modalItem);
+    const shouldLock = !loaded || Boolean(modalItem) || orderModalOpen;
     if (shouldLock) {
       lenisRef.current?.stop();
       document.body.style.overflow = 'hidden';
@@ -1194,7 +1824,7 @@ export default function ToshiSite() {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [loaded, modalItem]);
+  }, [loaded, modalItem, orderModalOpen]);
 
   return (
     <main className="bg-[#14110d] text-[#f3ead9]">
@@ -1206,19 +1836,26 @@ export default function ToshiSite() {
         <div className="w-full h-full bg-gradient-to-r from-[#8c2a26] via-[#c9a876] to-[#8c2a26]" />
       </motion.div>
 
-      <Navbar />
-      <HeroSection />
+      <Navbar onOrderClick={openOrderModal} />
+      <HeroSection onOrderClick={openOrderModal} />
       <TickerStrip />
-      <OrderSection />
+      <OrderSection onOrderClick={openOrderModal} />
+      <FreshnessSection />
       <MenuSection onItemClick={setModalItem} />
       <AboutSection />
       <PhotoWall />
-      <LocationSection />
+      <LocationSection mapsConsent={cookieChoice === 'accepted'} onEnableMaps={acceptCookies} onOrderClick={openOrderModal} />
       <Footer />
 
       <AnimatePresence>
-        {modalItem && <ProductModal item={modalItem} onClose={() => setModalItem(null)} />}
+        {modalItem && <ProductModal item={modalItem} onClose={() => setModalItem(null)} onOrderClick={openOrderModal} />}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {orderModalOpen && <OrderModal onClose={() => setOrderModalOpen(false)} />}
+      </AnimatePresence>
+
+      <CookieBanner show={showCookieBanner && loaded} onAccept={acceptCookies} onDecline={declineCookies} />
     </main>
   );
 }

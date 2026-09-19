@@ -28,12 +28,12 @@ export default function ToshiCursor() {
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-[#c9a876] pointer-events-none z-[200]"
+        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-[#c9a876] pointer-events-none z-[400]"
         animate={{ x: pos.x - 3, y: pos.y - 3, scale: hovering ? 0 : 1 }}
         transition={{ type: 'tween', duration: 0 }}
       />
       <motion.div
-        className="fixed top-0 left-0 w-9 h-9 rounded-full border border-[#c9a876]/55 pointer-events-none z-[200]"
+        className="fixed top-0 left-0 w-9 h-9 rounded-full border border-[#c9a876]/55 pointer-events-none z-[400]"
         animate={{
           x: pos.x - 18,
           y: pos.y - 18,
